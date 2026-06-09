@@ -33,6 +33,15 @@ float startBodyHeightOverGround = 160.0;            // mm
 float startLegExtend = 170.0;                       // mm
 float heightOffset = 0.0;
 
+// Gelenk-Limits für Rocky (in Grad). Diese Werte waren früher hart in der
+// Library (LegAngles.h) hinterlegt und werden hier zentral eingepflegt.
+//                      { min,    max }
+const LegLimits rockyLegLimits = {
+    {-65.0, 65.0},   // coxa  (swing)
+    {-130.0, 130.0}, // femur (lift)
+    {-140.0, 140.0}  // tibia (knee)  = ±(180 - 40)
+};
+
 RobotWithKinematics *robot;
 static RobotLeg myLegs[NUMBER_OF_LEGS] = {
     RobotLeg(
@@ -42,7 +51,8 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        0                             // degree of first servo from front of robot
+        0,                            // degree of first servo from front of robot
+        rockyLegLimits                // joint limits
         ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
@@ -51,7 +61,8 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        72                            // degree of first servo from front of robot
+        72,                           // degree of first servo from front of robot
+        rockyLegLimits                // joint limits
         ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
@@ -60,7 +71,8 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        144                           // degree of first servo from front of robot
+        144,                          // degree of first servo from front of robot
+        rockyLegLimits                // joint limits
         ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
@@ -69,7 +81,8 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        216                           // degree of first servo from front of robot
+        216,                          // degree of first servo from front of robot
+        rockyLegLimits                // joint limits
         ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
@@ -78,7 +91,8 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        288                           // degree of first servo from front of robot
+        288,                          // degree of first servo from front of robot
+        rockyLegLimits                // joint limits
         )};
 
 const uint16_t walkingStepCount = 70;
