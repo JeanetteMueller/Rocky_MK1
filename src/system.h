@@ -41,6 +41,8 @@ void setup()
                                     maxStepWidth,     // max step in mm
                                     walkingStepCount, // steps for one walk move
                                     mainLoopDelay,    // millis between mainloop
+                                    true,             // allow more than one leg be moved in one step
+                                    true,             // clockwise or counterclock
                                     myLegs            // all pre-configured legs
     );
 
