@@ -43,6 +43,7 @@ void setup()
                                     mainLoopDelay,    // millis between mainloop
                                     true,             // allow more than one leg be moved in one step
                                     true,             // clockwise or counterclock
+                                    false,            // shift body into support polygon
                                     myLegs            // all pre-configured legs
     );
 
