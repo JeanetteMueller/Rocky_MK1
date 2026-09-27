@@ -25,18 +25,20 @@ bool calibrated = false;
 
 #include "../extraCalibrations.h"
 
+// Timing
+const uint16_t walkingStepCount = 60;
+const uint16_t mainLoopDelay = 5;
+
+// Sizes
 const float bodyCenterToLegsCircleRadius = 104.175; // mm
 const float coxaLength = 54.0;                      // mm
 const float thighLength = 120.0;                    // mm
 const float shinLength = 217.0 + 5.5;               // mm // shin + rubber pad
-float startBodyHeightOverGround = 160.0;            // mm
-float startLegExtend = 170.0;                       // mm
-float heightOffset = 0.0;
-float minStepHeight = 30.0;
-AxisOffset legAxisOffset = {0.0f, 0.0f};
+const float minStepHeight = 30.0;
+const float centerOfMassShiftFactor = 0.4; // 0.0 = off, 1.0 = all the way to centroid
 
-// Gelenk-Limits für Rocky (in Grad). Diese Werte waren früher hart in der
-// Library (LegAngles.h) hinterlegt und werden hier zentral eingepflegt.
+// Joint limits for Rocky (in degrees). These values used to be hard-coded in
+// the library (LegAngles.h) and are now configured centrally here.
 //                      { min,    max }
 const LegLimits rockyLegLimits = {
     {-65.0, 65.0},   // coxa  (swing)
@@ -44,7 +46,30 @@ const LegLimits rockyLegLimits = {
     {-140.0, 140.0}  // tibia (knee)  = ±(180 - 40)
 };
 
+// Position
+const float startBodyHeightOverGround = 160.0;            // mm
+const float startLegExtend = 280.0;                       // mm
+const float heightOffset = 0.0;
+
+// Min/Max Values
+const float maxTilt = 26.0;
+const float maxRotation = 30.0;
+const float maxStepWidth = 230.0;
+const float minHeight = 170.0; // mm
+const float maxHeight = 285.0; // mm
+const float maxRotationBodyOnPoint = 260.0; // mm
+
+// Offset
+AxisOffset legAxisOffset = {0.0f, 0.0f};
+
+// Conditions
+const bool enableCenterOfMassShift = false;
+bool multiLegMovement = true;
+
+// Robot itself
 RobotWithKinematics *robot;
+
+// Legs
 static RobotLeg myLegs[NUMBER_OF_LEGS] = {
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
@@ -53,10 +78,12 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        minStepHeight,
-        0,              // degree of first servo from front of robot
-        rockyLegLimits, // joint limits
-        legAxisOffset),
+        minStepHeight,                // min height of foot over ground when walking
+        0,                            // degree of first servo from front of robot
+        -2.0f * 0,
+        rockyLegLimits,               // joint limits
+        legAxisOffset                 // Lateral axial displacement of the knee {femur, tibia} in mm
+        ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
         coxaLength,                   // coxa length in mm
@@ -64,10 +91,12 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        minStepHeight,
-        72,             // degree of first servo from front of robot
-        rockyLegLimits, // joint limits
-        legAxisOffset),
+        minStepHeight,                // min height of foot over ground when walking
+        72,                           // degree of first servo from front of robot
+        -2.0f * 72,
+        rockyLegLimits,               // joint limits
+        legAxisOffset                 // Lateral axial displacement of the knee {femur, tibia} in mm
+        ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
         coxaLength,                   // coxa length in mm
@@ -75,10 +104,12 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        minStepHeight,
-        144,            // degree of first servo from front of robot
-        rockyLegLimits, // joint limits
-        legAxisOffset),
+        minStepHeight,                // min height of foot over ground when walking
+        144,                          // degree of first servo from front of robot
+        -2.0f * 144,
+        rockyLegLimits,               // joint limits
+        legAxisOffset                 // Lateral axial displacement of the knee {femur, tibia} in mm
+        ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
         coxaLength,                   // coxa length in mm
@@ -86,10 +117,12 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        minStepHeight,
-        216,            // degree of first servo from front of robot
-        rockyLegLimits, // joint limits
-        legAxisOffset),
+        minStepHeight,                // min height of foot over ground when walking
+        216,                          // degree of first servo from front of robot
+        -2.0f * 216,
+        rockyLegLimits,               // joint limits
+        legAxisOffset                 // Lateral axial displacement of the knee {femur, tibia} in mm
+        ),
     RobotLeg(
         bodyCenterToLegsCircleRadius, // body radius in mm
         coxaLength,                   // coxa length in mm
@@ -97,21 +130,9 @@ static RobotLeg myLegs[NUMBER_OF_LEGS] = {
         shinLength,                   // shin length in mm
         heightOffset,                 // offset from center of mass
         startLegExtend,               // distance of first servo axis to foot
-        minStepHeight,
-        288,            // degree of first servo from front of robot
-        rockyLegLimits, // joint limits
-        legAxisOffset)};
-
-const uint16_t walkingStepCount = 70;
-const uint16_t mainLoopDelay = 5;
-const float maxTilt = 26.0;
-const float maxRotation = 30.0;
-const float maxStepWidth = 230.0;
-
-const float minHeight = 170.0; // mm
-const float maxHeight = 285.0; // mm
-
-const float maxRotationBodyOnPoint = 260.0; // mm
-
-float waveLegA = 0;
-bool waveLegADirection = true;
+        minStepHeight,                // min height of foot over ground when walking
+        288,                          // degree of first servo from front of robot
+        -2.0f * 288,
+        rockyLegLimits,               // joint limits
+        legAxisOffset                 // Lateral axial displacement of the knee {femur, tibia} in mm
+        )};

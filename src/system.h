@@ -20,7 +20,12 @@
 #include "input.h"
 #include "footSensors.h"
 
+// Timing
 uint32_t previousStepMillis = 0;
+
+// Wave with Legs Extras
+float waveLegA = 0;
+bool waveLegADirection = true;
 
 void setup()
 {
@@ -41,11 +46,15 @@ void setup()
                                     maxStepWidth,     // max step in mm
                                     walkingStepCount, // steps for one walk move
                                     mainLoopDelay,    // millis between mainloop
-                                    true,             // allow more than one leg be moved in one step
+                                    multiLegMovement,             // allow more than one leg be moved in one step
                                     true,             // clockwise or counterclock
-                                    false,            // shift body into support polygon
+                                    enableCenterOfMassShift,            // shift body into support polygon
                                     myLegs            // all pre-configured legs
     );
+
+    if (enableCenterOfMassShift) {
+        robot->setCenterOfMassShiftFactor(centerOfMassShiftFactor);
+    }
 
     robot->setPose(startBodyHeightOverGround, 0.0, 0.0, 0.0);
 
@@ -148,7 +157,7 @@ void loop()
         robot->doSpecialPose(1);
     }
 
-    robot->applyControls(walkX, walkY, rotateBody, 170.0, height, tiltX, tiltY, rotateTorso);
+    robot->applyControls(walkX, walkY, rotateBody, startLegExtend, height, tiltX, tiltY, rotateTorso);
 
     robot->mainLoop();
 
